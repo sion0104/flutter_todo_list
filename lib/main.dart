@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const TodoApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class TodoApp extends StatelessWidget {
+  const TodoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,11 @@ class TodoPage extends StatefulWidget {
 
 class _TodoPageState extends State<TodoPage> {
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -51,6 +58,7 @@ class _TodoPageState extends State<TodoPage> {
           final appState = Provider.of<TodoAppState>(context, listen: false);
           appState.addTodo(Todo(
             title: 'New Todo',
+            completed: false,
           ));
         },
       ),
@@ -139,14 +147,20 @@ class FloatingAddButton extends StatelessWidget {
 class TodoAppState extends ChangeNotifier {
   List<Todo> todos = [];
 
+  TodoAppState() {
+    _loadTodos();
+  }
+
   void addTodo(Todo todo) {
     todos.add(todo);
+    saveTodos();
     notifyListeners();
     debugPrint('addTodo: ${todo.title}');
   }
 
   void removeTodoAt(int index) {
     todos.removeAt(index);
+    saveTodos();
     notifyListeners();
     debugPrint('removeTodoAt($index)');
   }
@@ -159,6 +173,35 @@ class TodoAppState extends ChangeNotifier {
     todos[index].completed = !todos[index].completed;
     notifyListeners();
   }
+
+  Future<void> saveTodos() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String todosJson = jsonEncode(todos
+        .map((todo) => {
+              'title': todo.title,
+              'completed': todo.completed,
+            })
+        .toList());
+    await prefs.setString('todos', todosJson);
+    debugPrint('Todos saved: $todos');
+  }
+
+  Future<void> _loadTodos() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? todosJson = prefs.getString('todos');
+
+    if (todosJson != null) {
+      final List<dynamic> jsonList = json.decode(todosJson);
+      todos = jsonList
+          .map((json) => Todo(
+                title: json['title'],
+                completed: json['completed'],
+              ))
+          .toList();
+      notifyListeners();
+      debugPrint('Todos loaded: $todos');
+    }
+  }
 }
 
 class Todo {
@@ -167,5 +210,6 @@ class Todo {
 
   Todo({
     required this.title,
+    required this.completed,
   });
 }
