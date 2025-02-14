@@ -123,6 +123,56 @@ class TodoItem extends StatelessWidget {
       ),
       title: Text(todo.title),
       subtitle: Text('Details about ${todo.title}'),
+      onTap: () {
+        final route = MaterialPageRoute(
+          builder: (context) => TodoDetailPage(todo: todo, index: index),
+        );
+        Navigator.push(context, route);
+      },
+    );
+  }
+}
+
+class TodoDetailPage extends StatelessWidget {
+  final Todo todo;
+  final int index;
+
+  const TodoDetailPage({super.key, required this.todo, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(todo.title),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: TextEditingController(text: todo.title),
+              onChanged: (String value) {
+                todo.title = value;
+              },
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Provider.of<TodoAppState>(context, listen: false).todos[index] =
+                    todo;
+                Provider.of<TodoAppState>(context, listen: false).saveTodos();
+                Provider.of<TodoAppState>(context, listen: false)
+                    ._loadTodos()
+                    .then((_) {
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
+                });
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
