@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -47,6 +48,15 @@ class _TodoPageState extends State<TodoPage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              Provider.of<TodoAppState>(context, listen: false)
+                  .toggleHideCompleted();
+            },
+          ),
+        ],
       ),
       body: Consumer<TodoAppState>(
         builder: (context, appState, child) {
@@ -57,9 +67,7 @@ class _TodoPageState extends State<TodoPage> {
         onPressed: () {
           final appState = Provider.of<TodoAppState>(context, listen: false);
           appState.addTodo(Todo(
-            title: 'New Todo',
-            isCompleted: false,
-          ));
+              title: 'New Todo', isCompleted: false, created: DateTime.now()));
         },
       ),
     );
@@ -71,32 +79,33 @@ class TodoList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<TodoAppState>(context);
-    return ListView.builder(
-      itemCount: appState.todos.length,
-      itemBuilder: (context, index) {
-        return Dismissible(
-          key: UniqueKey(),
-          direction: DismissDirection.endToStart,
-          onDismissed: (direction) {
-            appState.removeTodoAt(index);
-          },
-          background: Container(
-            color: Colors.red,
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          child: TodoItem(
-            todo: appState.todos[index],
-            index: index, // 추가
-            onDelete: () {
+    return Consumer<TodoAppState>(builder: (context, appState, child) {
+      return ListView.builder(
+        itemCount: appState.todos.length,
+        itemBuilder: (context, index) {
+          return Dismissible(
+            key: UniqueKey(),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
               appState.removeTodoAt(index);
             },
-          ),
-        );
-      },
-    );
+            background: Container(
+              color: Colors.red,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            child: TodoItem(
+              todo: appState.todos[index],
+              index: index, // 추가
+              onDelete: () {
+                appState.removeTodoAt(index);
+              },
+            ),
+          );
+        },
+      );
+    });
   }
 }
 
@@ -118,7 +127,7 @@ class TodoItem extends StatelessWidget {
         value: todo.isCompleted,
         onChanged: (bool? value) {
           Provider.of<TodoAppState>(context, listen: false)
-              .toggleTodoAtIndex(index);
+              .toggleTodoCompletion(index);
         },
       ),
       title: Text(
@@ -127,7 +136,7 @@ class TodoItem extends StatelessWidget {
             ? TextStyle(decoration: TextDecoration.lineThrough)
             : null,
       ),
-      subtitle: Text('Details about ${todo.title}'),
+      subtitle: Text(DateFormat('yyyy-MM-dd').format(todo.created)),
       onTap: () {
         final route = MaterialPageRoute(
           builder: (context) => TodoDetailPage(todo: todo, index: index),
@@ -200,17 +209,27 @@ class FloatingAddButton extends StatelessWidget {
 }
 
 class TodoAppState extends ChangeNotifier {
-  List<Todo> todos = [];
+  List<Todo> _todos = [];
+  bool _hideCompleted = false;
 
   TodoAppState() {
     _loadTodos();
   }
 
+  List get todos {
+    if (_hideCompleted) {
+      return _todos.where((todo) => !todo.isCompleted).toList();
+    }
+    return _todos;
+  }
+
+  bool get hideCompleted => _hideCompleted;
+
   void addTodo(Todo todo) {
     todos.add(todo);
     saveTodos();
     notifyListeners();
-    debugPrint('addTodo: ${todo.title}');
+    debugPrint('addTodo: ${todo.title} ${todo.created}');
   }
 
   void removeTodoAt(int index) {
@@ -224,47 +243,60 @@ class TodoAppState extends ChangeNotifier {
     return todos.length;
   }
 
-  void toggleTodoAtIndex(int index) {
-    todos[index].isCompleted = !todos[index].isCompleted;
+  void toggleTodoCompletion(int index) {
+    _todos[index].isCompleted = !_todos[index].isCompleted;
+    saveTodos();
     notifyListeners();
+    debugPrint('toggleTodoCompletion: ${_todos[index].title}');
   }
 
-  Future<void> saveTodos() async {
+  Future saveTodos() async {
     final prefs = await SharedPreferences.getInstance();
-    final String todosJson = jsonEncode(todos
-        .map((todo) => {
-              'title': todo.title,
-              'completed': todo.isCompleted,
-            })
-        .toList());
+    final String todosJson =
+        jsonEncode(_todos.map((todo) => todo.toJson()).toList());
     await prefs.setString('todos', todosJson);
     debugPrint('Todos saved: $todos');
   }
 
-  Future<void> _loadTodos() async {
+  Future _loadTodos() async {
     final prefs = await SharedPreferences.getInstance();
     final String? todosJson = prefs.getString('todos');
 
     if (todosJson != null) {
-      final List<dynamic> jsonList = json.decode(todosJson);
-      todos = jsonList
-          .map((json) => Todo(
-                title: json['title'],
-                isCompleted: json['completed'],
-              ))
-          .toList();
+      final List jsonList = json.decode(todosJson);
+      _todos = jsonList.map((json) => Todo.fromJson(json)).toList();
       notifyListeners();
       debugPrint('Todos loaded: $todos');
     }
+  }
+
+  void toggleHideCompleted() {
+    _hideCompleted = !_hideCompleted;
+    notifyListeners();
   }
 }
 
 class Todo {
   String title;
   bool isCompleted = false;
+  DateTime created = DateTime.now();
 
   Todo({
     required this.title,
-    required this.isCompleted,
+    this.isCompleted = false,
+    required this.created,
   });
+
+  // JSON 직렬화 및 역직렬화 메소드를 추가
+  Map toJson() => {
+        'title': title,
+        'completed': isCompleted,
+        'created': created.toIso8601String(),
+      };
+
+  factory Todo.fromJson(Map json) => Todo(
+        title: json['title'],
+        isCompleted: json['completed'],
+        created: DateTime.parse(json['created']),
+      );
 }
