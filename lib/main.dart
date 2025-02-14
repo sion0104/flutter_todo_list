@@ -58,7 +58,7 @@ class _TodoPageState extends State<TodoPage> {
           final appState = Provider.of<TodoAppState>(context, listen: false);
           appState.addTodo(Todo(
             title: 'New Todo',
-            completed: false,
+            isCompleted: false,
           ));
         },
       ),
@@ -115,7 +115,7 @@ class TodoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Checkbox(
-        value: todo.completed,
+        value: todo.isCompleted,
         onChanged: (bool? value) {
           Provider.of<TodoAppState>(context, listen: false)
               .toggleTodoAtIndex(index);
@@ -123,7 +123,7 @@ class TodoItem extends StatelessWidget {
       ),
       title: Text(
         todo.title,
-        style: todo.completed
+        style: todo.isCompleted
             ? TextStyle(decoration: TextDecoration.lineThrough)
             : null,
       ),
@@ -225,7 +225,7 @@ class TodoAppState extends ChangeNotifier {
   }
 
   void toggleTodoAtIndex(int index) {
-    todos[index].completed = !todos[index].completed;
+    todos[index].isCompleted = !todos[index].isCompleted;
     notifyListeners();
   }
 
@@ -234,7 +234,7 @@ class TodoAppState extends ChangeNotifier {
     final String todosJson = jsonEncode(todos
         .map((todo) => {
               'title': todo.title,
-              'completed': todo.completed,
+              'completed': todo.isCompleted,
             })
         .toList());
     await prefs.setString('todos', todosJson);
@@ -250,7 +250,7 @@ class TodoAppState extends ChangeNotifier {
       todos = jsonList
           .map((json) => Todo(
                 title: json['title'],
-                completed: json['completed'],
+                isCompleted: json['completed'],
               ))
           .toList();
       notifyListeners();
@@ -261,10 +261,10 @@ class TodoAppState extends ChangeNotifier {
 
 class Todo {
   String title;
-  bool completed = false;
+  bool isCompleted = false;
 
   Todo({
     required this.title,
-    required this.completed,
+    required this.isCompleted,
   });
 }
