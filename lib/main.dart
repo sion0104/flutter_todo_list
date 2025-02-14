@@ -81,6 +81,7 @@ class TodoList extends StatelessWidget {
           ),
           child: TodoItem(
             todo: appState.todos[index],
+            index: index, // 추가
             onDelete: () {
               appState.removeTodoAt(index);
             },
@@ -93,13 +94,25 @@ class TodoList extends StatelessWidget {
 
 class TodoItem extends StatelessWidget {
   final Todo todo;
+  final int index;
   final VoidCallback onDelete;
 
-  const TodoItem({super.key, required this.todo, required this.onDelete});
+  const TodoItem(
+      {super.key,
+      required this.todo,
+      required this.index,
+      required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      leading: Checkbox(
+        value: todo.completed,
+        onChanged: (bool? value) {
+          Provider.of<TodoAppState>(context, listen: false)
+              .toggleTodoAtIndex(index);
+        },
+      ),
       title: Text(todo.title),
       subtitle: Text('Details about ${todo.title}'),
     );
@@ -141,10 +154,16 @@ class TodoAppState extends ChangeNotifier {
   int todoCount() {
     return todos.length;
   }
+
+  void toggleTodoAtIndex(int index) {
+    todos[index].completed = !todos[index].completed;
+    notifyListeners();
+  }
 }
 
 class Todo {
   String title;
+  bool completed = false;
 
   Todo({
     required this.title,
