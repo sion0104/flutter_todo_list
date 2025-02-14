@@ -164,12 +164,18 @@ class TodoDetailPage extends StatefulWidget {
 class _TodoDetailPageState extends State<TodoDetailPage> {
   late TextEditingController _titleController;
   late TextEditingController _notesController;
+  late String _selectedCategory;
+  late String _selectedPriority;
+  late DateTime? _dueDate;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.todo.title);
     _notesController = TextEditingController(text: widget.todo.notes ?? '');
+    _selectedCategory = widget.todo.category;
+    _selectedPriority = widget.todo.priority;
+    _dueDate = widget.todo.dueDate;
   }
 
   @override
@@ -177,6 +183,21 @@ class _TodoDetailPageState extends State<TodoDetailPage> {
     _titleController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future _selectDueDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dueDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _dueDate) {
+      setState(() {
+        _dueDate = picked;
+        widget.todo.dueDate = picked;
+      });
+    }
   }
 
   @override
@@ -188,49 +209,94 @@ class _TodoDetailPageState extends State<TodoDetailPage> {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Center(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title',
-                  border: OutlineInputBorder(),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (String value) {
+                    widget.todo.title = value;
+                  },
                 ),
-                onChanged: (String value) {
-                  widget.todo.title = value;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              TextField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16.0),
+                TextField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (String value) {
+                    widget.todo.notes = value;
+                  },
                 ),
-                onChanged: (String value) {
-                  widget.todo.notes = value;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: () {
-                  final appState = Provider.of(context, listen: false);
-                  appState.todos[widget.index] = widget.todo;
-                  appState.saveTodos();
-                  appState._loadTodos();
-                  Navigator.pop(context);
-                  // Provider.of<TodoAppState>(context, listen: false)
-                  //     ._loadTodos()
-                  //     .then((_) {
-                  //   if (context.mounted) {
-                  //     Navigator.pop(context);
-                  //   }
-                  // });
-                },
-                child: const Text('Save'),
-              ),
-            ],
+                const SizedBox(height: 16.0),
+                DropdownButtonFormField(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['General', 'Work', 'Personal']
+                      .map((category) => DropdownMenuItem(
+                            value: category,
+                            child: Text(category),
+                          ))
+                      .toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedCategory = newValue!;
+                      widget.todo.category = newValue;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16.0),
+                DropdownButtonFormField(
+                  value: _selectedPriority,
+                  decoration: const InputDecoration(
+                    labelText: 'Priority',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: ['High', 'Medium', 'Low']
+                      .map((priority) => DropdownMenuItem(
+                            value: priority,
+                            child: Text(priority),
+                          ))
+                      .toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedPriority = newValue!;
+                      widget.todo.priority = newValue;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16.0),
+                ListTile(
+                  title: Text(
+                      'Due Date: ${_dueDate != null ? _dueDate!.toLocal().toString().split(' ')[0] : 'No date selected'}'),
+                  trailing: ElevatedButton(
+                    onPressed: () => _selectDueDate(context),
+                    child: const Text('Select Date'),
+                  ),
+                ),
+                const SizedBox(height: 16.0),
+                ElevatedButton(
+                  onPressed: () {
+                    final appState =
+                        Provider.of<TodoAppState>(context, listen: false);
+                    appState.todos[widget.index] = widget.todo;
+                    appState.saveTodos();
+                    appState._loadTodos();
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
