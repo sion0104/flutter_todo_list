@@ -121,7 +121,12 @@ class TodoItem extends StatelessWidget {
               .toggleTodoAtIndex(index);
         },
       ),
-      title: Text(todo.title),
+      title: Text(
+        todo.title,
+        style: todo.completed
+            ? TextStyle(decoration: TextDecoration.lineThrough)
+            : null,
+      ),
       subtitle: Text('Details about ${todo.title}'),
       onTap: () {
         final route = MaterialPageRoute(
