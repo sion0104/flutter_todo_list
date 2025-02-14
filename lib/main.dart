@@ -67,7 +67,11 @@ class _TodoPageState extends State<TodoPage> {
         onPressed: () {
           final appState = Provider.of<TodoAppState>(context, listen: false);
           appState.addTodo(Todo(
-              title: 'New Todo', isCompleted: false, created: DateTime.now()));
+              title: 'Tab hear...',
+              isCompleted: false,
+              created: DateTime.now(),
+              category: 'General',
+              priority: 'Medium'));
         },
       ),
     );
@@ -147,44 +151,87 @@ class TodoItem extends StatelessWidget {
   }
 }
 
-class TodoDetailPage extends StatelessWidget {
+class TodoDetailPage extends StatefulWidget {
   final Todo todo;
   final int index;
 
   const TodoDetailPage({super.key, required this.todo, required this.index});
 
   @override
+  State<TodoDetailPage> createState() => _TodoDetailPageState();
+}
+
+class _TodoDetailPageState extends State<TodoDetailPage> {
+  late TextEditingController _titleController;
+  late TextEditingController _notesController;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.todo.title);
+    _notesController = TextEditingController(text: widget.todo.notes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(todo.title),
+        title: Text(widget.todo.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextField(
-              controller: TextEditingController(text: todo.title),
-              onChanged: (String value) {
-                todo.title = value;
-              },
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Provider.of<TodoAppState>(context, listen: false).todos[index] =
-                    todo;
-                Provider.of<TodoAppState>(context, listen: false).saveTodos();
-                Provider.of<TodoAppState>(context, listen: false)
-                    ._loadTodos()
-                    .then((_) {
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                  }
-                });
-              },
-              child: const Text('Save'),
-            ),
-          ],
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (String value) {
+                  widget.todo.title = value;
+                },
+              ),
+              const SizedBox(height: 16.0),
+              TextField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (String value) {
+                  widget.todo.notes = value;
+                },
+              ),
+              const SizedBox(height: 16.0),
+              ElevatedButton(
+                onPressed: () {
+                  final appState = Provider.of(context, listen: false);
+                  appState.todos[widget.index] = widget.todo;
+                  appState.saveTodos();
+                  appState._loadTodos();
+                  Navigator.pop(context);
+                  // Provider.of<TodoAppState>(context, listen: false)
+                  //     ._loadTodos()
+                  //     .then((_) {
+                  //   if (context.mounted) {
+                  //     Navigator.pop(context);
+                  //   }
+                  // });
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -255,7 +302,7 @@ class TodoAppState extends ChangeNotifier {
     final String todosJson =
         jsonEncode(_todos.map((todo) => todo.toJson()).toList());
     await prefs.setString('todos', todosJson);
-    debugPrint('Todos saved: $todos');
+    debugPrint('Todos saved: $_todos');
   }
 
   Future _loadTodos() async {
@@ -266,7 +313,7 @@ class TodoAppState extends ChangeNotifier {
       final List jsonList = json.decode(todosJson);
       _todos = jsonList.map((json) => Todo.fromJson(json)).toList();
       notifyListeners();
-      debugPrint('Todos loaded: $todos');
+      debugPrint('Todos loaded: $_todos');
     }
   }
 
@@ -278,25 +325,45 @@ class TodoAppState extends ChangeNotifier {
 
 class Todo {
   String title;
-  bool isCompleted = false;
-  DateTime created = DateTime.now();
+  bool isCompleted;
+  DateTime created;
+  String category;
+  String priority;
+  DateTime? dueDate;
+  String? notes;
+  List tags;
 
   Todo({
     required this.title,
     this.isCompleted = false,
     required this.created,
+    required this.category,
+    required this.priority,
+    this.dueDate,
+    this.notes,
+    this.tags = const [],
   });
 
-  // JSON 직렬화 및 역직렬화 메소드를 추가
   Map toJson() => {
         'title': title,
         'completed': isCompleted,
         'created': created.toIso8601String(),
+        'category': category,
+        'priority': priority,
+        'dueDate': dueDate?.toIso8601String(),
+        'notes': notes,
+        'tags': tags,
       };
 
   factory Todo.fromJson(Map json) => Todo(
         title: json['title'],
         isCompleted: json['completed'],
         created: DateTime.parse(json['created']),
+        category: json['category'],
+        priority: json['priority'],
+        dueDate:
+            json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
+        notes: json['notes'],
+        tags: List.from(json['tags']),
       );
 }
