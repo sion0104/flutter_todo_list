@@ -6,7 +6,7 @@ class Todo {
   DateTime created;
   Category category;
   String priority;
-  DateTime? dueDate;
+  DateTime? haveToDate;
   String? notes;
   List tags;
 
@@ -16,7 +16,7 @@ class Todo {
     required this.created,
     required this.category,
     required this.priority,
-    this.dueDate,
+    this.haveToDate,
     this.notes,
     this.tags = const [],
   });
@@ -27,7 +27,7 @@ class Todo {
         'created': created.toIso8601String(),
         'category': category.name,
         'priority': priority,
-        'dueDate': dueDate?.toIso8601String(),
+        'dueDate': haveToDate?.toIso8601String(),
         'notes': notes,
         'tags': tags,
       };
@@ -38,7 +38,7 @@ class Todo {
         created: DateTime.parse(json['created']),
         category: CategoryExtension.fromString(json['category']),
         priority: json['priority'],
-        dueDate:
+        haveToDate:
             json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,
         notes: json['notes'],
         tags: List.from(json['tags']),

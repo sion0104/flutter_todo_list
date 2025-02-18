@@ -28,7 +28,7 @@ class _TodoDetailPageState extends State<TodoDetailPage> {
     _notesController = TextEditingController(text: widget.todo.notes ?? '');
     _selectedCategory = widget.todo.category;
     _selectedPriority = widget.todo.priority;
-    _dueDate = widget.todo.dueDate;
+    _dueDate = widget.todo.haveToDate;
   }
 
   @override
@@ -48,7 +48,7 @@ class _TodoDetailPageState extends State<TodoDetailPage> {
     if (picked != null && picked != _dueDate) {
       setState(() {
         _dueDate = picked;
-        widget.todo.dueDate = picked;
+        widget.todo.haveToDate = picked;
       });
     }
   }
