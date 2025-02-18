@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:todo_list/models/category.dart';
 import 'package:todo_list/models/todo.dart';
 import 'package:todo_list/widgets/todo/todo_page.dart';
 
@@ -16,7 +17,7 @@ class TodoDetailPage extends StatefulWidget {
 class _TodoDetailPageState extends State<TodoDetailPage> {
   late TextEditingController _titleController;
   late TextEditingController _notesController;
-  late String _selectedCategory;
+  late Category _selectedCategory;
   late String _selectedPriority;
   late DateTime? _dueDate;
 
@@ -93,13 +94,13 @@ class _TodoDetailPageState extends State<TodoDetailPage> {
                     labelText: 'Category',
                     border: OutlineInputBorder(),
                   ),
-                  items: ['General', 'Work', 'Personal']
+                  items: Category.values
                       .map((category) => DropdownMenuItem(
                             value: category,
-                            child: Text(category),
+                            child: Text(category.name),
                           ))
                       .toList(),
-                  onChanged: (String? newValue) {
+                  onChanged: (Category? newValue) {
                     setState(() {
                       _selectedCategory = newValue!;
                       widget.todo.category = newValue;

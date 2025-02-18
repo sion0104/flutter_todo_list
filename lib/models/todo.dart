@@ -1,8 +1,10 @@
+import 'package:todo_list/models/category.dart';
+
 class Todo {
   String title;
   bool isCompleted;
   DateTime created;
-  String category;
+  Category category;
   String priority;
   DateTime? dueDate;
   String? notes;
@@ -23,7 +25,7 @@ class Todo {
         'title': title,
         'completed': isCompleted,
         'created': created.toIso8601String(),
-        'category': category,
+        'category': category.name,
         'priority': priority,
         'dueDate': dueDate?.toIso8601String(),
         'notes': notes,
@@ -34,7 +36,7 @@ class Todo {
         title: json['title'],
         isCompleted: json['completed'],
         created: DateTime.parse(json['created']),
-        category: json['category'],
+        category: CategoryExtension.fromString(json['category']),
         priority: json['priority'],
         dueDate:
             json['dueDate'] != null ? DateTime.parse(json['dueDate']) : null,

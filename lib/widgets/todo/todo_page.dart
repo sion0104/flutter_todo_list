@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:todo_list/models/category.dart';
 import 'package:todo_list/widgets/floating_add.dart';
 
 import '../../models/todo.dart';
@@ -118,7 +119,7 @@ class _TodoPageState extends State<TodoPage> {
               title: 'Tab hear...',
               isCompleted: false,
               created: DateTime.now(),
-              category: 'General',
+              category: Category.none,
               priority: 'Medium'));
         },
       ),
